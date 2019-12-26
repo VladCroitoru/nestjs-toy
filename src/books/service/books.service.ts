@@ -1,43 +1,65 @@
 import { Injectable } from '@nestjs/common';
-import { BooksDAO } from '../dao/books.dao';
-import CreateBookDTO from '../dto/create-book.dto';
-import { BooksMapper } from '../mapper/books.mapper';
+import { InjectRepository } from '@nestjs/typeorm';
+import Book from '../entity/books.entity';
+import { MongoRepository } from 'typeorm';
+import { TransformClassToPlain } from 'class-transformer';
+import { ObjectID } from 'mongodb';
+import BookDTO from '../dto/book.dto';
+import Author from 'src/authors/entity/author.entity';
 
 @Injectable()
 export class BooksService {
 
-    private mapper = BooksMapper;
+    constructor(
+        @InjectRepository(Book) private readonly bookRepository: MongoRepository<Book>,
+        @InjectRepository(Author) private readonly authorRepository: MongoRepository<Author>
+    ) { }
 
-    constructor(private readonly booksDAO: BooksDAO) { }
-
-    async getAll() {
-        const books = await this.booksDAO.getAll();
-        return this.mapper.toDTOs(books);
+    @TransformClassToPlain()
+    async getAll(authorId: string): Promise<Book[]> {
+        const queryParams = !!authorId ? authorId : {};
+        const books = await this.bookRepository.find(queryParams);
+        return this.mapToAuthors(books);
     }
 
-    async getAllByAuthorId(id: string) {
-        const books = await this.booksDAO.getAllByAuthorId(id);
-        return this.mapper.toDTOs(books);
+    @TransformClassToPlain()
+    async getById(id: string): Promise<Book> {
+        const objectId = ObjectID(id);
+        const book = await this.bookRepository.findOne(objectId);
+        return await this.mapToAuthor(book);
     }
 
-    async getById(id: string) {
-        const book = await this.booksDAO.getById(id);
-        return this.mapper.toDTO(book);
+    @TransformClassToPlain()
+    async create(bookDTO: BookDTO): Promise<Book> {
+        const { title, authorId, iban, publishedAt } = bookDTO;
+        const newBook = new Book({ title, authorId, iban, publishedAt });
+        const book = await this.bookRepository.save(newBook);
+        return this.mapToAuthor(book);
     }
 
-    async create(bookDTO: CreateBookDTO) {
-        const book = this.mapper.toEntity(bookDTO);
-        const result = await this.booksDAO.create(book);
-        return this.mapper.toDTO(result);
+    @TransformClassToPlain()
+    async upsert(id: string, bookDTO: BookDTO): Promise<Book> {
+        const objectId = ObjectID(id);
+        const { title, authorId, iban, publishedAt } = bookDTO;
+        const newBook = new Book({ id: objectId, title, authorId, iban, publishedAt });
+        const book = await this.bookRepository.save(newBook);
+        return this.mapToAuthor(book);
     }
 
-    async upsert(id: string, bookDTO: CreateBookDTO) {
-        const book = this.mapper.toEntity(bookDTO);
-        const result = await this.booksDAO.upsert(id, book);
-        return this.mapper.toDTO(result);
+    async deleteById(id: string): Promise<any> {
+        const objectId = ObjectID(id)
+        return await this.bookRepository.deleteOne({ _id: objectId });
     }
 
-    async deleteById(id: string) {
-        return await this.booksDAO.deleteById(id);
+    private async mapToAuthor(book: Book): Promise<Book> {
+        const { authorId } = book;
+        const objectId = ObjectID(authorId);
+        const author = await this.authorRepository.findOne(objectId);
+        return new Book({ ...book, author });
+    }
+
+    private async mapToAuthors(books: Book[]): Promise<Book[]> {
+        const promises = books.map(book => this.mapToAuthor(book));
+        return Promise.all(promises);
     }
 }

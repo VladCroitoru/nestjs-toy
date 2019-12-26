@@ -1,39 +1,47 @@
 import { Injectable } from '@nestjs/common';
-import { AuthorsDAO } from '../dao/authors.dao';
-import { AuthorsMapper } from '../mapper/authors.mapper';
-import CreateAuthorDTO from '../dto/create-author.dto';
 import AuthorDTO from '../dto/author.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import Author from '../entity/author.entity';
+import { MongoRepository } from 'typeorm';
+import { ObjectID } from 'mongodb'
+import { TransformClassToPlain } from 'class-transformer';
 
 @Injectable()
 export class AuthorsService {
 
-    private mapper = AuthorsMapper;
+    constructor(
+        @InjectRepository(Author)
+        private readonly authorRepository: MongoRepository<Author>
+    ) { }
 
-    constructor(private readonly authorsDAO: AuthorsDAO) { }
-
-    async getAll(): Promise<AuthorDTO[]> {
-        const authors = await this.authorsDAO.getAll();
-        return this.mapper.toDTOs(authors);
+    @TransformClassToPlain()
+    async getAll(): Promise<Author[]> {
+        return await this.authorRepository.find();
     }
 
-    async getById(id: string): Promise<AuthorDTO> {
-        const author = await this.authorsDAO.getById(id);
-        return this.mapper.toDTO(author);
+    @TransformClassToPlain()
+    async getById(id: string): Promise<Author> {
+        const objectId = ObjectID(id);
+        return await this.authorRepository.findOne(objectId);
     }
 
-    async create(authorDTO: CreateAuthorDTO): Promise<AuthorDTO> {
-        const author = this.mapper.toEntity(authorDTO);
-        const result = await this.authorsDAO.create(author);
-        return this.mapper.toDTO(result);
+    @TransformClassToPlain()
+    async create(authorDTO: AuthorDTO): Promise<Author> {
+        const { firstName, lastName, birthDate } = authorDTO;
+        const author = new Author({ firstName, lastName, birthDate })
+        return await this.authorRepository.save(author);
     }
 
-    async upsert(id: string, authorDTO: CreateAuthorDTO): Promise<AuthorDTO> {
-        const author = this.mapper.toEntity(authorDTO);
-        const result = await this.authorsDAO.upsert(id, author);
-        return this.mapper.toDTO(result);
+    @TransformClassToPlain()
+    async upsert(id: string, authorDTO: AuthorDTO): Promise<Author> {
+        const objectId = ObjectID(id);
+        const { firstName, lastName, birthDate } = authorDTO;
+        const author = new Author({ id: objectId, firstName, lastName, birthDate });
+        return await this.authorRepository.save(author);
     }
 
     async deleteById(id: string) {
-        return await this.authorsDAO.deleteById(id);
+        const objectId = ObjectID(id)
+        return await this.authorRepository.deleteOne({ _id: objectId });
     }
 }

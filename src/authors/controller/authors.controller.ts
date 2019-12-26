@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Put, Delete, Body, UsePipes, ValidationPipe, Param } from '@nestjs/common';
 import { AuthorsService } from '../service/authors.service';
-import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
-import CreateAuthorDTO from '../dto/create-author.dto';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import AuthorDTO from '../dto/author.dto';
+import Author from '../entity/author.entity';
 
 @ApiTags('authors')
 @Controller('authors')
@@ -12,6 +12,7 @@ export class AuthorsController {
 
     @Get()
     @ApiOperation({ summary: 'Get all authors' })
+    @ApiResponse({ type: [Author] })
     async getAll(): Promise<AuthorDTO[]> {
         return await this.authorsService.getAll();
     }
@@ -19,23 +20,25 @@ export class AuthorsController {
     @Get(':id')
     @UsePipes(ValidationPipe)
     @ApiOperation({ summary: 'Get an author by id' })
-    async getById(@Param('id') id: string): Promise<AuthorDTO> {
+    @ApiResponse({ type: Author })
+    async getById(@Param('id') id: string): Promise<Author> {
         return await this.authorsService.getById(id);
     }
 
     @Post()
     @UsePipes(ValidationPipe)
     @ApiOperation({ summary: 'Create an author' })
-    @ApiBody({ type: CreateAuthorDTO })
-    async create(@Body() createAuthorDTO: CreateAuthorDTO): Promise<AuthorDTO> {
-        return await this.authorsService.create(createAuthorDTO);
+    @ApiResponse({ type: Author })
+    async create(@Body() author: AuthorDTO): Promise<Author> {
+        return await this.authorsService.create(author);
     }
 
     @Put(':id')
     @UsePipes(ValidationPipe)
     @ApiOperation({ summary: 'Update an author by id' })
-    async update(@Param('id') id: string, @Body() createAuthorDTO: CreateAuthorDTO): Promise<AuthorDTO> {
-        return await this.authorsService.upsert(id, createAuthorDTO);
+    @ApiResponse({ type: Author })
+    async update(@Param('id') id: string, @Body() authorDTO: AuthorDTO): Promise<Author> {
+        return await this.authorsService.upsert(id, authorDTO);
     }
 
     @Delete(':id')

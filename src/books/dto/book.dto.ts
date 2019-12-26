@@ -1,13 +1,21 @@
-import AuthorDTO from '../../authors/dto/author.dto';
-import { Exclude } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsDateString } from 'class-validator';
 
 export default class BookDTO {
-    id: string;
+
+    @IsString()
+    @ApiProperty()
     title: string;
-    @Exclude() authorId: string;
-    author: AuthorDTO;
+
+    @IsString()
+    @ApiProperty()
+    authorId: string;
+
+    @IsString()
+    @ApiProperty()
     iban: string;
+
+    @IsDateString()
+    @ApiProperty({ type: String, format: 'date-time' })
     publishedAt: Date;
-    createdAt: Date;
-    updatedAt: Date;
 }
