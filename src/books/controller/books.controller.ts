@@ -2,7 +2,7 @@ import { Controller, Get, Post, Put, Delete, UsePipes, ValidationPipe, Param, Bo
 import { BooksService } from '../service/books.service';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import BookDTO from '../dto/book.dto';
-import Book from '../entity/books.entity';
+import Book from '../entity/book.entity';
 
 @ApiTags('books')
 @Controller('books')

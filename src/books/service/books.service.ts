@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import Book from '../entity/books.entity';
+import Book from '../entity/book.entity';
 import { MongoRepository } from 'typeorm';
 import { TransformClassToPlain } from 'class-transformer';
 import { ObjectID } from 'mongodb';
