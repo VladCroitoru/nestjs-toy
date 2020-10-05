@@ -1,7 +1,3 @@
-## Description
-
-Goparrot task.
-
 ## Installation
 
 ```bash
